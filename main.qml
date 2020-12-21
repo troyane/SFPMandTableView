@@ -18,11 +18,36 @@ ApplicationWindow {
     ListElement { name: "Orange"; cost: 3.25 }
   }
 
+  Button {
+    anchors {
+      right: parent.right
+    }
+    text: "Change order"
+    onClicked: {
+      if (sorter.sortOrder === Qt.AscendingOrder) {
+        sorter.sortOrder = Qt.DescendingOrder
+      } else {
+        sorter.sortOrder = Qt.AscendingOrder
+      }
+    }
+  }
+
   SortFilterProxyModel {
     id: filteredModel
     sourceModel: fruitModel
 
-    sorters: [ StringSorter { roleName: "name" } ]
+    sorters: [ StringSorter {
+        id: sorter
+        sortOrder: Qt.AscendingOrder
+        roleName: "name"
+      } ]
+  }
+
+  TableModel {
+    id: tableModel
+    rows: filteredModel.rows
+    TableModelColumn { display: "name" }
+    TableModelColumn { display: "cost" }
   }
 
   ColumnLayout {
@@ -31,11 +56,14 @@ ApplicationWindow {
     Text { text: "TableView"; font.bold: true }
 
     TableView {
+      id: tableView
       clip: true
       Layout.fillHeight: true
       Layout.fillWidth: true
 
-      model: filteredModel
+      property var currentRowName: ""
+
+      model: tableModel
 
       delegate: DelegateChooser {
         DelegateChoice {
@@ -43,19 +71,25 @@ ApplicationWindow {
           delegate: TextField {
             implicitWidth: 140
             font.capitalization: Font.AllUppercase
-            // You can access "cost" value
-            text: name // + " / " + cost
+            text: model.display
             readOnly: true
+            onActiveFocusChanged: {
+              if (activeFocus) {
+                console.error("Focused", model.display, model.row)
+                tableView.currentRowName = model.display
+              }
+            }
           }
         }
-        // But Column 1 not working...
         DelegateChoice {
           column: 1
           delegate: TextField {
             implicitWidth: 70
             font.capitalization: Font.AllUppercase
-            text: cost
+            text: model.display
             readOnly: true
+            font.underline: true
+            horizontalAlignment: Qt.AlignRight
           }
         }
       }
