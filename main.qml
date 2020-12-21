@@ -17,38 +17,9 @@ ApplicationWindow {
     ListElement { name: "Banana"; cost: 5 }
     ListElement { name: "Apple";  cost: 9 }
     ListElement { name: "Orange"; cost: 3 }
-  }
 
-  Column {
-    anchors {
-      right: parent.right
-      top: parent.top
-    }
-
-    Button {
-      text: "Change order"
-      onClicked: {
-        if (sorter.sortOrder === Qt.AscendingOrder) {
-          sorter.sortOrder = Qt.DescendingOrder
-        } else {
-          sorter.sortOrder = Qt.AscendingOrder
-        }
-      }
-    }
-
-    Button {
-      text: "Add new item"
-      property var fruits: [ 'Pineapple', 'Watermelon', 'Melon', 'Kiwi', 'Cucumber', 'Tomato' ]
-      onClicked: {
-        const randomNumber = Math.floor(Math.random() * fruits.length)
-        const randomCost = Math.floor((Math.random() * 10) * 100)/100
-        const randomFruit = {
-          "name": fruits[randomNumber],
-          "cost": randomCost
-        }
-
-        fruitModel.append( randomFruit )
-      }
+    onDataChanged: {
+      console.warn("Data changed!", topLeft, bottomRight)
     }
   }
 
@@ -56,11 +27,25 @@ ApplicationWindow {
     id: filteredModel
     sourceModel: fruitModel
 
-    sorters: [ StringSorter {
+    sorters: [
+      StringSorter {
         id: sorter
         sortOrder: Qt.AscendingOrder
         roleName: "name"
-      } ]
+      }
+    ]
+  }
+
+  property int currentIndex: -1
+
+  function setCurrentIndex(row) {
+    const baseModelRowIndex = filteredModel.mapToSource(row)
+    currentIndex = baseModelRowIndex
+  }
+
+  function setModelData(index, changes) {
+    const baseModelRowIndex = filteredModel.mapToSource(index)
+    fruitModel.set(baseModelRowIndex, changes )
   }
 
   TableModel {
@@ -72,64 +57,104 @@ ApplicationWindow {
 
   ColumnLayout {
     anchors.fill: parent
-
-    Text { text: "TableView"; font.bold: true }
-
-    TableView {
-      id: tableView
-      clip: true
-      Layout.fillHeight: true
-      width: window.width *.8
-
-      property var currentRowName: ""
-
-      model: tableModel
-
-      delegate: DelegateChooser {
-        DelegateChoice {
-          column: 0
-          delegate: TextField {
-            implicitWidth: 140
-            font.capitalization: Font.AllUppercase
-            text: model.display
-            readOnly: true
-            onActiveFocusChanged: {
-              if (activeFocus) {
-                console.error("Focused", model.display, model.row)
-                tableView.currentRowName = model.display
-              }
-            }
+    Row {
+      spacing: 10
+      Button {
+        text: "Change order"
+        onClicked: {
+          if (sorter.sortOrder === Qt.AscendingOrder) {
+            sorter.sortOrder = Qt.DescendingOrder
+          } else {
+            sorter.sortOrder = Qt.AscendingOrder
           }
         }
-        DelegateChoice {
-          column: 1
-          delegate: TextField {
-            implicitWidth: 70
-            font.capitalization: Font.AllUppercase
-            text: model.display
-            readOnly: true
-            font.underline: true
-            horizontalAlignment: Qt.AlignRight
+      }
+
+      Button {
+        text: "Add new item"
+        property var fruits: [ 'Pineapple', 'Watermelon', 'Melon', 'Kiwi', 'Cucumber', 'Tomato' ]
+        onClicked: {
+          const randomNumber = Math.floor(Math.random() * fruits.length)
+          const randomCost = Math.floor((Math.random() * 10) * 100)/100
+          const randomFruit = {
+            "name": fruits[randomNumber],
+            "cost": randomCost
           }
+
+          fruitModel.append( randomFruit )
         }
       }
     }
 
-    Rectangle {
-      Layout.fillWidth: true
-      height: 2
-      color: "salmon"
-    }
+    Text { text: "TableView"; font.bold: true }
 
-    Text { text: "ListView"; font.bold: true }
-
-    ListView {
-      clip: true
+    Row {
+      id: row
       Layout.fillHeight: true
-      Layout.fillWidth: true
-      model: filteredModel
-      delegate: Text {
-        text: "Fruit " + name + " for $" + cost
+      width: window.width *.8
+
+      Column {
+        Repeater {
+          model: filteredModel
+          delegate: RadioButton {
+            enabled: false
+            checked: (currentIndex > -1) ? filteredModel.mapFromSource(currentIndex) === index : false
+          }
+        }
+      }
+
+      TableView {
+        id: tableView
+        clip: true
+        columnSpacing: 1
+        width: row.width * 0.9
+        height: row.height
+
+        property var currentRowName: ""
+
+        model: tableModel
+
+        delegate: DelegateChooser {
+          DelegateChoice {
+            column: 0
+            delegate: TextField {
+              id: nameEdit
+              implicitWidth: 140
+              font.capitalization: Font.AllUppercase
+              text: model.display
+              onActiveFocusChanged: {
+                if (activeFocus) {
+                  setCurrentIndex(model.row)
+                }
+              }
+              onEditingFinished: {
+                const changes = { "name" : nameEdit.text }
+                setModelData(model.row, changes)
+              }
+            }
+          }
+          DelegateChoice {
+            column: 1
+            delegate: SpinBox {
+              id: costSpinBox
+              width: 100
+              from: 0
+              to: 100
+              stepSize: 1
+              value: model.display
+              onValueModified: {
+                const changes = { "cost" : costSpinBox.value }
+                setModelData(model.row, changes)
+                setCurrentIndex(model.row)
+              }
+              onActiveFocusChanged: {
+                if (activeFocus) {
+                  setCurrentIndex(model.row)
+                }
+              }
+            }
+          }
+        }
       }
     }
   }
