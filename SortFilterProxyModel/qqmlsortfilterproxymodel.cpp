@@ -5,6 +5,8 @@
 #include "sorter.h"
 #include "proxyrole.h"
 
+#include <QDebug>
+
 namespace qqsfpm {
 
 /*!
@@ -35,6 +37,9 @@ QQmlSortFilterProxyModel::QQmlSortFilterProxyModel(QObject *parent) :
     connect(this, &QAbstractItemModel::modelReset, this, &QQmlSortFilterProxyModel::countChanged);
     connect(this, &QAbstractItemModel::layoutChanged, this, &QQmlSortFilterProxyModel::countChanged);
     connect(this, &QAbstractItemModel::dataChanged, this, &QQmlSortFilterProxyModel::onDataChanged);
+
+    connect(this, &QQmlSortFilterProxyModel::countChanged, this, &QQmlSortFilterProxyModel::rowsChanged);
+
     setDynamicSortFilter(true);
 }
 
@@ -335,6 +340,21 @@ int QQmlSortFilterProxyModel::mapFromSource(int sourceRow) const
     return proxyIndex.isValid() ? proxyIndex.row() : -1;
 }
 
+QVariantList QQmlSortFilterProxyModel::rows() const
+{
+    QVariantList p;
+    for (int i = 0; i < count(); ++i) {
+        QVariantMap map;
+        QModelIndex modelIndex = index(i, 0);
+        QHash<int, QByteArray> roles = roleNames();
+        for (QHash<int, QByteArray>::const_iterator it = roles.begin(); it != roles.end(); ++it)
+            map.insert(it.value(), data(modelIndex, it.key()));
+        p.append(map);
+    }
+    qDebug() << "Returning:" << p;
+    return p;
+}
+
 bool QQmlSortFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
 {
     if (!m_completed)
@@ -443,6 +463,7 @@ void QQmlSortFilterProxyModel::onDataChanged(const QModelIndex& topLeft, const Q
     Q_UNUSED(roles);
     if (!roles.isEmpty() && roles != m_proxyRoleNumbers)
         Q_EMIT dataChanged(topLeft, bottomRight, m_proxyRoleNumbers);
+    Q_EMIT rowsChanged();
 }
 
 void QQmlSortFilterProxyModel::emitProxyRolesChanged()

@@ -29,6 +29,7 @@ class QQmlSortFilterProxyModel : public QSortFilterProxyModel, public QQmlParser
     Q_PROPERTY(QQmlListProperty<qqsfpm::Filter> filters READ filters)
     Q_PROPERTY(QQmlListProperty<qqsfpm::Sorter> sorters READ sorters)
     Q_PROPERTY(QQmlListProperty<qqsfpm::ProxyRole> proxyRoles READ proxyRoles)
+    Q_PROPERTY(QVariantList rows READ rows NOTIFY rowsChanged)
 
 public:
     enum PatternSyntax {
@@ -85,6 +86,8 @@ public:
     Q_INVOKABLE QModelIndex mapFromSource(const QModelIndex& sourceIndex) const override;
     Q_INVOKABLE int mapFromSource(int sourceRow) const;
 
+    QVariantList rows() const;
+
 Q_SIGNALS:
     void countChanged();
 
@@ -95,6 +98,8 @@ Q_SIGNALS:
 
     void sortRoleNameChanged();
     void ascendingSortOrderChanged();
+
+    void rowsChanged();
 
 protected:
     bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
