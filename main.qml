@@ -7,9 +7,10 @@ import SortFilterProxyModel 0.2
 
 
 ApplicationWindow {
+  id: window
   visible: true
-  width: 400
-  height: 300
+  width: 450
+  height: 400
 
   ListModel {
     id: fruitModel
@@ -18,16 +19,35 @@ ApplicationWindow {
     ListElement { name: "Orange"; cost: 3.25 }
   }
 
-  Button {
+  Column {
     anchors {
       right: parent.right
+      top: parent.top
     }
-    text: "Change order"
-    onClicked: {
-      if (sorter.sortOrder === Qt.AscendingOrder) {
-        sorter.sortOrder = Qt.DescendingOrder
-      } else {
-        sorter.sortOrder = Qt.AscendingOrder
+
+    Button {
+      text: "Change order"
+      onClicked: {
+        if (sorter.sortOrder === Qt.AscendingOrder) {
+          sorter.sortOrder = Qt.DescendingOrder
+        } else {
+          sorter.sortOrder = Qt.AscendingOrder
+        }
+      }
+    }
+
+    Button {
+      text: "Add new item"
+      property var fruits: [ 'Pineapple', 'Watermelon', 'Melon', 'Kiwi', 'Cucumber', 'Tomato' ]
+      onClicked: {
+        const randomNumber = Math.floor(Math.random() * fruits.length)
+        const randomCost = Math.floor((Math.random() * 10) * 100)/100
+        const randomFruit = {
+          "name": fruits[randomNumber],
+          "cost": randomCost
+        }
+
+        fruitModel.append( randomFruit )
       }
     }
   }
@@ -59,7 +79,7 @@ ApplicationWindow {
       id: tableView
       clip: true
       Layout.fillHeight: true
-      Layout.fillWidth: true
+      width: window.width *.8
 
       property var currentRowName: ""
 
