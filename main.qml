@@ -19,7 +19,7 @@ ApplicationWindow {
     ListElement { name: "Orange"; cost: 3 }
 
     onDataChanged: {
-      console.warn("Data changed!", topLeft, bottomRight)
+      console.warn("Data changed in ListModel", topLeft, bottomRight)
     }
   }
 
@@ -34,6 +34,10 @@ ApplicationWindow {
         roleName: "name"
       }
     ]
+
+    onDataChanged: {
+      console.warn("Data changed in SFPM", topLeft, bottomRight)
+    }
   }
 
   property int currentIndex: -1
